@@ -1,10 +1,5 @@
 const express = require("express");
-const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
-const passport = require("passport");
-const users = require("./routes/api/users");
-const strategies = require("./routes/api/strategies");
-const orders = require("./routes/api/orders");
 const Proxies = require("./utils/Proxies");
 
 const app = express();
