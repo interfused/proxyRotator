@@ -1,0 +1,7 @@
+node_modules
+**/logs
+*.log
+config/keys.js
+.DS_Store
+nodemon.json
+**/data/**
