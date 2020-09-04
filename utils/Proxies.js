@@ -5,14 +5,39 @@ const cronConfig = require("../config/crons");
 var CronJob = require("cron").CronJob;
 
 const jsonFile = `./data/proxylist.json`;
-const sampleURL =
-  "https://api.pro.coinbase.com/products/BCH-USD/candles?granularity=900&start=2020-08-30T06:03:21.805Z";
+const currenciesArr = [
+  "BTC",
+  "ETH",
+  "XRP",
+  "LTC",
+  "EOS",
+  "DASH",
+  "OXT",
+  "MKR",
+  "XLM",
+  "ATOM",
+  "XTZ",
+  "ETC",
+  "OMG",
+  "LINK",
+  "REP",
+  "ZRX",
+  "ALGO",
+  "DAI",
+  "KNC",
+  "COMP",
+  "BAND",
+  "NMR",
+  "CGLD",
+];
+const baseApiURL = "https://api.pro.coinbase.com";
 
 /**
- * RANDOM PROXY GENERATOR
+ * WRITE RANDOM PROXY GENERATOR
  * https://zenscrape.com/how-to-build-a-simple-proxy-rotator-in-node-js/
  * https://www.intricatecloud.io/2020/03/how-to-handle-api-errors-in-your-web-app-using-axios/
- * https://sslproxies.org/
+ *
+ * We're grabbing proxies from hidemy.name
  */
 
 const writeRandomProxies = async function (
@@ -20,11 +45,12 @@ const writeRandomProxies = async function (
 ) {
   const maxPages = 15;
   let proxies = [];
-  let ip_addresses = [];
-  let port_numbers = [];
   let url = "https://hidemy.name/en/proxy-list/";
+  /*
+   each page shows 64 results so we loop through to create the start page indexes
+   EX: https://hidemy.name/en/proxy-list/?start=64#list
+   */
 
-  //https://hidemy.name/en/proxy-list/?start=64#list
   let array = [];
   for (let i = 0; i < maxPages; i++) {
     var newURL = url;
@@ -42,7 +68,7 @@ const writeRandomProxies = async function (
       for (let i = 0; i < array.length; i++) {
         promises.push(
           axios.get(array[i]).then((response) => {
-            // do something with response
+            // parse the response
             const $ = cheerio.load(response.data);
             const baseSelector = ".table_block tbody tr";
             $(`${baseSelector}`).each(function (index, value) {
@@ -57,7 +83,7 @@ const writeRandomProxies = async function (
           })
         );
       }
-
+      // FILTER THE LIST FOR faster, high anonymity http proxies
       Promise.all(promises).then(() => {
         let filteredProxies = proxies
           .filter(function (n) {
@@ -73,8 +99,9 @@ const writeRandomProxies = async function (
 
         let writtten_data = JSON.stringify(filteredProxies, null, 2);
         try {
-          // Write file to the client/data directory
+          // Write file to the data directory
           fs.writeFileSync(jsonFile, writtten_data);
+          console.log("proxy list written to data directory");
         } catch (error) {
           console.log("!!!proxy list writing error is");
           console.dir(error);
@@ -90,26 +117,51 @@ const writeRandomProxies = async function (
 };
 
 /**
- * https://codingmiles.com/node-js-making-https-request-via-proxy/
+ * CONNECT THROUGH RANDOM PROXY
  */
 const connectThroughProxy = function () {
   var randomProxy = getRandomProxy();
   console.log("randomProxy");
   console.dir(randomProxy);
+  // sampleURL example
+  // https://api.pro.coinbase.com/products/BTC-USD/candles?granularity=900&start=2020-08-30T06:03:21.805Z
 
-  var proxy = `http://${randomProxy.ip_address}:${randomProxy.port_number}`;
+  let sampleURL = `${baseApiURL}/products/BTC-USD/candles?granularity=900&start=2020-08-30T06:03:21.805Z`;
+
+  /**
+    STUB TODO: Once figured out how to connect through proxy, loop through all URLs through random proxies to grab all data
+
+    let allURLs = currenciesArr.map((s) => {
+    return `${baseApiURL}/products/${s}-USD/candles?granularity=900&start=2020-08-30T06:03:21.805Z`;
+    });
+
+    console.log("allURLs:");
+    console.dir(allURLs);
+  */
+
   let config = {};
   config.url = sampleURL;
+  /*
   config.proxy = {
     host: randomProxy.ip_address,
     port: randomProxy.port_number,
   };
+  */
+  config.proxy = {
+    host: "54.214.52.181",
+    port: "80",
+  };
   config.headers = { "User-Agent": getRandomUserAgent() };
+
+  // AXIOS DOCUMENTATION
+  // https://www.npmjs.com/package/axios#axios-api
 
   axios
     .request(config)
     .then(function (response) {
-      console.log("axios proxy success:");
+      console.log("axios proxy success for config:");
+      console.dir(config);
+      console.log("with data:");
       console.dir(response.data);
     })
     .catch(function (error) {
@@ -118,6 +170,9 @@ const connectThroughProxy = function () {
     });
 };
 
+/**
+ * GET RANDOM PROXY SETTINGS FROM DATA FILE
+ */
 const getRandomProxy = function () {
   let rawdata = fs.readFileSync(jsonFile);
   let allProxies = JSON.parse(rawdata);
@@ -125,6 +180,9 @@ const getRandomProxy = function () {
   return allProxies[random_number];
 };
 
+/**
+ * GRAB RANDOM USER AGENT
+ */
 const getRandomUserAgent = function () {
   let arr = [];
   // Desktops
@@ -151,6 +209,8 @@ const getRandomUserAgent = function () {
   arr.push(
     "Mozilla/5.0 (Linux; Android 7.0; SM-G930VC Build/NRD90M; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/58.0.3029.83 Mobile Safari/537.36"
   );
+  let random_number = Math.floor(Math.random() * arr.length);
+  return arr[random_number];
 };
 
 module.exports = {

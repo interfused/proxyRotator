@@ -13,7 +13,7 @@ app.use(
 app.use(bodyParser.json());
 
 Proxies.writeRandomProxies({ period: "minutes", slice: 10 });
-// Proxies.connectThroughProxy();
+Proxies.connectThroughProxy();
 
 const port = process.env.PORT || 5000; // process.env.port is Heroku's port if you choose to deploy the app there
 const server = app.listen(port, () => {
