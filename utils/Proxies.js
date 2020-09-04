@@ -179,7 +179,20 @@ const connectThroughProxy = function () {
       console.log("axios proxy success for config:");
       console.dir(config);
       console.log("with data:");
-      console.dir(response.data);
+      console.dir(response);
+
+      let data = JSON.stringify(response.data, null, 2);
+      let str = "coinbasepro";
+      /*
+      try {
+        // Write file to the client/data directory
+        fs.writeFileSync(`./data/${str}/products-${str}.json`, data);
+        console.log("coinbase pro products written");
+      } catch (error) {
+        console.log("////coinbasepro writeProductsFile error is");
+        console.dir(error);
+      }
+      */
     })
     .catch(function (error) {
       console.log("axios proxy fail:");
