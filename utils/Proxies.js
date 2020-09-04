@@ -119,6 +119,7 @@ const writeRandomProxies = async function (
 
 /**
  * CONNECT THROUGH RANDOM PROXY
+ * https://github.com/axios/axios/issues/2072
  */
 const connectThroughProxy = function () {
   var randomProxy = getRandomProxy();
@@ -135,7 +136,8 @@ const connectThroughProxy = function () {
   // sampleURL example
   // https://api.pro.coinbase.com/products/BTC-USD/candles?granularity=900&start=2020-08-30T06:03:21.805Z
 
-  let sampleURL = `${baseApiURL}/products/BTC-USD/candles?granularity=900&start=2020-08-30T06:03:21.805Z`;
+  let granularity = 900;
+  let sampleURL = `${baseApiURL}/products/BTC-USD/candles?granularity=${granularity}&start=2020-08-30T06:03:21.805Z`;
 
   /**
     STUB TODO: Once figured out how to connect through proxy, loop through all URLs through random proxies to grab all data
@@ -174,6 +176,11 @@ const connectThroughProxy = function () {
       },
       agent,
       port: 443,
+      additionalParams: {
+        baseCurrency: "BTC",
+        quoteCurrency: "USD",
+        granularity,
+      },
     })
     .then(function (response) {
       console.log("axios proxy success for config:");
@@ -183,16 +190,29 @@ const connectThroughProxy = function () {
 
       let data = JSON.stringify(response.data, null, 2);
       let str = "coinbasepro";
-      /*
+
       try {
+        let fileParams = response.config.additionalParams;
+        console.log("fileParams");
+        console.dir(fileParams);
+        let granularityStr;
+        switch (fileParams.granularity) {
+          case 900:
+            granularityStr = "min15";
+            break;
+          default:
+            granularityStr = "unknown";
+        }
         // Write file to the client/data directory
-        fs.writeFileSync(`./data/${str}/products-${str}.json`, data);
+        fs.writeFileSync(
+          `./data/${str}/${fileParams.baseCurrency}-${fileParams.quoteCurrency}-${granularityStr}.json`,
+          data
+        );
         console.log("coinbase pro products written");
       } catch (error) {
         console.log("////coinbasepro writeProductsFile error is");
         console.dir(error);
       }
-      */
     })
     .catch(function (error) {
       console.log("axios proxy fail:");
