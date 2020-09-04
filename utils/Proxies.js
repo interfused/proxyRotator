@@ -1,4 +1,5 @@
 const axios = require("axios");
+const tunnel = require("tunnel");
 const cheerio = require("cheerio");
 const fs = require("fs");
 const cronConfig = require("../config/crons");
@@ -121,6 +122,14 @@ const writeRandomProxies = async function (
  */
 const connectThroughProxy = function () {
   var randomProxy = getRandomProxy();
+  var agent = tunnel.httpsOverHttp({
+    proxy: {
+      host: randomProxy.ip_address,
+      port: randomProxy.port_number,
+    },
+    rejectUnauthorized: false,
+  });
+
   console.log("randomProxy");
   console.dir(randomProxy);
   // sampleURL example
@@ -157,7 +166,15 @@ const connectThroughProxy = function () {
   // https://www.npmjs.com/package/axios#axios-api
 
   axios
-    .request(config)
+    .request({
+      url: sampleURL,
+      method: "get",
+      headers: {
+        "User-Agent": getRandomUserAgent(),
+      },
+      agent,
+      port: 443,
+    })
     .then(function (response) {
       console.log("axios proxy success for config:");
       console.dir(config);

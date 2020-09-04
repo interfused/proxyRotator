@@ -16,6 +16,7 @@
     "cron": "^1.8.2",
     "express": "^4.17.1",
     "fs": "0.0.1-security",
-    "passport": "^0.4.1"
+    "passport": "^0.4.1",
+    "tunnel": "0.0.6"
   }
 }
