@@ -150,20 +150,6 @@ const connectThroughProxy = function () {
     console.dir(allURLs);
   */
 
-  let config = {};
-  config.url = sampleURL;
-  /*
-  config.proxy = {
-    host: randomProxy.ip_address,
-    port: randomProxy.port_number,
-  };
-  */
-  config.proxy = {
-    host: "54.214.52.181",
-    port: "80",
-  };
-  config.headers = { "User-Agent": getRandomUserAgent() };
-
   // AXIOS DOCUMENTATION
   // https://www.npmjs.com/package/axios#axios-api
 
@@ -183,9 +169,7 @@ const connectThroughProxy = function () {
       },
     })
     .then(function (response) {
-      console.log("axios proxy success for config:");
-      console.dir(config);
-      console.log("with data:");
+      console.log("axios proxy success:");
       console.dir(response);
 
       let data = JSON.stringify(response.data, null, 2);
