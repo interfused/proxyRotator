@@ -4,6 +4,7 @@ const cheerio = require("cheerio");
 const fs = require("fs");
 const cronConfig = require("../config/crons");
 var CronJob = require("cron").CronJob;
+var proxyIndex = -1;
 
 const jsonFile = `./data/proxylist.json`;
 const currenciesArr = [
@@ -122,86 +123,89 @@ const writeRandomProxies = async function (
  * https://github.com/axios/axios/issues/2072
  */
 const connectThroughProxy = function () {
-  var randomProxy = getRandomProxy();
-  var agent = tunnel.httpsOverHttp({
-    proxy: {
-      host: randomProxy.ip_address,
-      port: randomProxy.port_number,
-    },
-    rejectUnauthorized: false,
-  });
+  //var randomProxy = getRandomProxy();
 
-  console.log("randomProxy");
-  console.dir(randomProxy);
   // sampleURL example
   // https://api.pro.coinbase.com/products/BTC-USD/candles?granularity=900&start=2020-08-30T06:03:21.805Z
 
   let granularity = 900;
   let sampleURL = `${baseApiURL}/products/BTC-USD/candles?granularity=${granularity}&start=2020-08-30T06:03:21.805Z`;
 
-  /**
-    STUB TODO: Once figured out how to connect through proxy, loop through all URLs through random proxies to grab all data
-
-    let allURLs = currenciesArr.map((s) => {
+  let allURLs = currenciesArr.map((s) => {
     return `${baseApiURL}/products/${s}-USD/candles?granularity=900&start=2020-08-30T06:03:21.805Z`;
+  });
+
+  var tmpIndex = -1;
+
+  for (i = 0; i < allURLs.length; i++) {
+    let randomProxy = getNextProxy();
+
+    let agent = tunnel.httpsOverHttp({
+      proxy: {
+        host: randomProxy.ip_address,
+        port: randomProxy.port_number,
+      },
+      rejectUnauthorized: false,
     });
 
-    console.log("allURLs:");
-    console.dir(allURLs);
-  */
+    console.log("randomProxy");
+    console.dir(randomProxy);
+    // AXIOS DOCUMENTATION
+    // https://www.npmjs.com/package/axios#axios-api
+    setTimeout(function () {
+      tmpIndex++;
+      console.log(`timeout index: ${tmpIndex}`);
 
-  // AXIOS DOCUMENTATION
-  // https://www.npmjs.com/package/axios#axios-api
+      let instance = axios
+        .request({
+          url: allURLs[tmpIndex],
+          method: "get",
+          headers: {
+            "User-Agent": getRandomUserAgent(),
+          },
+          agent,
+          port: 443,
+          additionalParams: {
+            baseCurrency: currenciesArr[tmpIndex],
+            quoteCurrency: "USD",
+            granularity,
+          },
+        })
+        .then(function (response) {
+          //console.log("axios proxy success:");
+          //console.dir(response);
 
-  axios
-    .request({
-      url: sampleURL,
-      method: "get",
-      headers: {
-        "User-Agent": getRandomUserAgent(),
-      },
-      agent,
-      port: 443,
-      additionalParams: {
-        baseCurrency: "BTC",
-        quoteCurrency: "USD",
-        granularity,
-      },
-    })
-    .then(function (response) {
-      console.log("axios proxy success:");
-      console.dir(response);
+          let data = JSON.stringify(response.data, null, 2);
+          let str = "coinbasepro";
 
-      let data = JSON.stringify(response.data, null, 2);
-      let str = "coinbasepro";
-
-      try {
-        let fileParams = response.config.additionalParams;
-        console.log("fileParams");
-        console.dir(fileParams);
-        let granularityStr;
-        switch (fileParams.granularity) {
-          case 900:
-            granularityStr = "min15";
-            break;
-          default:
-            granularityStr = "unknown";
-        }
-        // Write file to the client/data directory
-        fs.writeFileSync(
-          `./data/${str}/${fileParams.baseCurrency}-${fileParams.quoteCurrency}-${granularityStr}.json`,
-          data
-        );
-        console.log("coinbase pro products written");
-      } catch (error) {
-        console.log("////coinbasepro writeProductsFile error is");
-        console.dir(error);
-      }
-    })
-    .catch(function (error) {
-      console.log("axios proxy fail:");
-      console.dir(error);
-    });
+          try {
+            let fileParams = response.config.additionalParams;
+            console.log("fileParams");
+            console.dir(fileParams);
+            let granularityStr;
+            switch (fileParams.granularity) {
+              case 900:
+                granularityStr = "min15";
+                break;
+              default:
+                granularityStr = "unknown";
+            }
+            // Write file to the client/data directory
+            fs.writeFileSync(
+              `./data/${str}/${fileParams.baseCurrency}-${fileParams.quoteCurrency}-${granularityStr}.json`,
+              data
+            );
+          } catch (error) {
+            console.log("////coinbasepro writeProductsFile error is");
+            console.dir(error);
+          }
+        })
+        .catch(function (error) {
+          console.log("axios proxy fail:");
+          console.dir(error);
+        });
+    }, (i + 1) * 100);
+  }
 };
 
 /**
@@ -212,6 +216,21 @@ const getRandomProxy = function () {
   let allProxies = JSON.parse(rawdata);
   let random_number = Math.floor(Math.random() * allProxies.length);
   return allProxies[random_number];
+};
+
+/**
+ * GET RANDOM PROXY SETTINGS FROM DATA FILE
+ */
+const getNextProxy = function () {
+  let rawdata = fs.readFileSync(jsonFile);
+  let allProxies = JSON.parse(rawdata);
+
+  if (proxyIndex >= allProxies.length) {
+    proxyIndex = 0;
+  } else {
+    proxyIndex++;
+  }
+  return allProxies[proxyIndex];
 };
 
 /**
@@ -251,5 +270,6 @@ module.exports = {
   writeRandomProxies,
   connectThroughProxy,
   getRandomProxy,
+  getNextProxy,
   getRandomUserAgent,
 };
