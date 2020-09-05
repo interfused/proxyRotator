@@ -120,7 +120,8 @@ const writeRandomProxies = async function (
 
 /**
  * CONNECT THROUGH RANDOM PROXY
- * https://github.com/axios/axios/issues/2072
+ * https://github.com/axios/axios/issues/2072 (adam s comment)
+ * https://github.com/axios/axios/issues/2072#issuecomment-592233032
  */
 const connectThroughProxy = function () {
   //var randomProxy = getRandomProxy();
@@ -164,7 +165,6 @@ const connectThroughProxy = function () {
             "User-Agent": getRandomUserAgent(),
           },
           agent,
-          port: 443,
           additionalParams: {
             baseCurrency: currenciesArr[tmpIndex],
             quoteCurrency: "USD",
@@ -204,7 +204,7 @@ const connectThroughProxy = function () {
           console.log("axios proxy fail:");
           console.dir(error);
         });
-    }, (i + 1) * 100);
+    }, (i + 1) * 500);
   }
 };
 
@@ -221,8 +221,8 @@ const getRandomProxy = function () {
 /**
  * GET RANDOM PROXY SETTINGS FROM DATA FILE
  */
-const getNextProxy = function () {
-  let rawdata = fs.readFileSync(jsonFile);
+const getNextProxy = async function () {
+  let rawdata = await fs.readFileSync(jsonFile);
   let allProxies = JSON.parse(rawdata);
 
   if (proxyIndex >= allProxies.length) {
