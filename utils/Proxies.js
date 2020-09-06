@@ -99,7 +99,25 @@ const writeRandomProxies = async function (
             //return n.type.includes("socks5");
           });
 
-        let writtten_data = JSON.stringify(filteredProxies, null, 2);
+        //unique ip addresses
+        console.log("ALL IPS CNT: ", filteredProxies.length);
+        const unique_ips = [];
+        const map = new Map();
+        for (const item of filteredProxies) {
+          if (!map.has(item.ip_address)) {
+            map.set(item.ip_address, true); // set any value to Map
+            unique_ips.push({
+              ip_address: item.ip_address,
+              port_number: item.port_number,
+              speed: item.speed,
+              type: item.type,
+              anonymity: item.anonymity,
+            });
+          }
+        }
+        console.log("UNIQUE IPS CNT: ", unique_ips.length);
+
+        let writtten_data = JSON.stringify(unique_ips, null, 2);
         try {
           // Write file to the data directory
           fs.writeFileSync(jsonFile, writtten_data);
@@ -204,7 +222,7 @@ const connectThroughProxy = function () {
           console.log("axios proxy fail:");
           console.dir(error);
         });
-    }, (i + 1) * 500);
+    }, (i + 1) * 10);
   }
 };
 
